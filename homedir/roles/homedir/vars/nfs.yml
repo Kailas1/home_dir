@@ -1,0 +1,5 @@
+nfs_shares:
+    - { server: "172.25.250.10:/shared", mount_point: "/mnt/nas_share1/" }
+      #    - { server: "172.25.250.11:/nas_shared_B", mount_point: "/mnt/nas_share2/" }
+
+

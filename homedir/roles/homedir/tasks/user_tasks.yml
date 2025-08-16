@@ -1,0 +1,10 @@
+---
+- name: Create the home dir
+  ansible.builtin.file:
+    path: "{{ item.mount_point }}/{{ home_dir }}"
+    state: directory
+    mode: '0755'
+    
+- name: Show directory results
+  ansible.builtin.debug:
+    msg: "Home directory created {{ item.mount_point }}/{{ home_dir }}"

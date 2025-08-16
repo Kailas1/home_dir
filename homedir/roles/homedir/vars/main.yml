@@ -1,0 +1,7 @@
+---
+# vars file for homedir
+nfs_shares:
+    - { server: "172.25.250.10:/shared", mount_point: "/mnt/nas_share1/" }
+vars_files:
+  #  - nfs.yml
+  - uservars.yml

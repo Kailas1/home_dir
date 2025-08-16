@@ -1,0 +1,26 @@
+---
+- name: Check if NFS share is already mounted
+  ansible.builtin.command: findmnt -n {{ item.mount_point }}
+  register: mount_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Mount NFS share
+  ansible.builtin.command: >
+    mount -t nfs {{ item.server }} {{ item.mount_point }}
+  when: mount_check.rc != 0
+  register: mount_result
+
+- name: Show mount result
+  ansible.builtin.debug:
+    msg: "NFS share {{ item.server }} was mounted successfully to {{ item.mount_point }}"
+  when: mount_check.rc != 0 and mount_result.rc == 0
+
+- name: Show already mounted message
+  ansible.builtin.debug:
+    msg: "NFS share {{ item.server }} is already mounted on {{ item.mount_point }}"
+  when: mount_check.rc == 0
+
+- name: Add the user creation task
+  ansible.builtin.include_tasks: user_tasks.yml
+

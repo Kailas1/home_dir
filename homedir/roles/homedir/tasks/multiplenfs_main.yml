@@ -1,0 +1,16 @@
+---
+- name: Mount multiple NFS shares temporarily if not already mounted
+  hosts: all
+  become: yes
+  vars:
+    nfs_shares:
+      - { server: "172.25.250.10:/shared", mount_point: "/mnt/nas_share1/" }
+      - { server: "172.25.250.11:/nas_shared_B", mount_point: "/mnt/nas_share2/" }
+    home_dir: A5588323-a
+      # Add more shares as needed
+  tasks:
+    - name: Mount NFS shares and Create the home dir
+      ansible.builtin.include_tasks: multi_nfs_tasks.yml
+      loop: "{{ nfs_shares }}"
+      loop_control:
+        loop_var: item

@@ -1,0 +1,5 @@
+- name: Mount NFS shares and Create the home dir
+  ansible.builtin.include_tasks: multi_nfs_tasks.yml
+  loop: "{{ nfs_shares }}"
+  loop_control:
+    loop_var: item
