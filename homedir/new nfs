@@ -1,0 +1,66 @@
+- name: Mount multiple NFS shares from multiple servers and create home directories
+  hosts: all
+  become: yes
+  vars:
+    nfs_configurations:
+      - server: "172.25.250.10"
+        shares:
+          - { path: "/shared", mount_point: "/mnt/nas_share1/", home_dir: "user1", owner: "root", group: "root" }
+          - { path: "/shared2", mount_point: "/mnt/nas_share2/", home_dir: "user1", owner: "root", group: "root" }
+      - server: "172.25.250.11"
+        shares:
+          - { path: "/data", mount_point: "/mnt/second_nas1/", home_dir: "user2", owner: "root", group: "root" }
+          - { path: "/backup", mount_point: "/mnt/second_nas2/", home_dir: "user2", owner: "root", group: "root" }
+      # Add more servers and shares as needed
+  tasks:
+    - name: Create mount points
+      ansible.builtin.file:
+        path: "{{ item.1.mount_point }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      loop: "{{ nfs_configurations | subelements('shares') }}"
+      when: item.1.mount_point is defined
+      loop_control:
+        label: "{{ item.1.mount_point }}"
+
+    - name: Check if NFS share is already mounted
+      ansible.builtin.command: findmnt -n {{ item.1.mount_point }}
+      register: mount_check
+      ignore_errors: yes
+      changed_when: false
+      loop: "{{ nfs_configurations | subelements('shares') }}"
+      loop_control:
+        label: "{{ item.1.mount_point }}"
+
+    - name: Mount NFS shares
+      ansible.builtin.command: >
+        mount -t nfs {{ item.0.server }}:{{ item.1.path }} {{ item.1.mount_point }}
+      when: item.1.mount_check is undefined or item.1.mount_check.rc != 0
+      register: mount_result
+      loop: "{{ nfs_configurations | subelements('shares') }}"
+      loop_control:
+        label: "{{ item.0.server }}:{{ item.1.path }} → {{ item.1.mount_point }}"
+
+    - name: Create home directories on mounted shares
+      ansible.builtin.file:
+        path: "{{ item.1.mount_point }}/{{ item.1.home_dir }}"
+        state: directory
+        owner: "{{ item.1.owner }}"
+        group: "{{ item.1.group }}"
+        mode: '0755'
+      loop: "{{ nfs_configurations | subelements('shares') }}"
+      loop_control:
+        label: "{{ item.1.mount_point }}/{{ item.1.home_dir }}"
+
+    - name: Show final status
+      ansible.builtin.debug:
+        msg: |
+          NFS Share Status:
+          Server: {{ item.0.server }}
+          Share: {{ item.1.path }}
+          Mount Point: {{ item.1.mount_point }}
+          Mount Status: {% if item.1.mount_check is defined and item.1.mount_check.rc == 0 %}Already mounted{% else %}Mounted successfully{% endif %}
+          Home Directory: {{ item.1.mount_point }}/{{ item.1.home_dir }} (created)
+      loop: "{{ nfs_configurations | subelements('shares') }}"
