@@ -64,3 +64,24 @@
           Mount Status: {% if item.1.mount_check is defined and item.1.mount_check.rc == 0 %}Already mounted{% else %}Mounted successfully{% endif %}
           Home Directory: {{ item.1.mount_point }}/{{ item.1.home_dir }} (created)
       loop: "{{ nfs_configurations | subelements('shares') }}"
+
+===========================================================
+tasks:
+    - name: Verify this is the correct target server
+      ansible.builtin.assert:
+        that: inventory_hostname == item.target_server
+        fail_msg: "This play should only run on {{ item.target_server }}, not {{ inventory_hostname }}"
+      loop: "{{ nfs_shares }}"
+      when: item.target_server is defined
+      loop_control:
+        label: "{{ item.target_server }}"
+
+- name: Show final mount status
+      ansible.builtin.debug:
+        msg: |
+          NFS Cross-Mount Status:
+          Source: {{ item.source_server }}
+          Mount Point: {{ item.mount_point }}
+          Target Server: {{ item.target_server }}
+          Status: {% if item.mount_check is defined and item.mount_check.rc == 0 %}Already mounted{% else %}Mounted successfully{% endif %}
+      loop: "{{ nfs_shares }}"
